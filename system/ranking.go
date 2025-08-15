@@ -58,7 +58,6 @@ func (rb *RankBoard) RecordHit(event HitEvent) {
 		rb.files[id] = file
 		rb.rbt.insert(file)
 	} else {
-
 		rb.rbt.update(file)
 	}
 }

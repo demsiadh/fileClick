@@ -21,6 +21,7 @@ func (f *File) String() string {
 type HitEvent struct {
 	Id       int
 	FileName string
+	Ts       int64
 }
 
 // RedBlackNode 红黑树节点
