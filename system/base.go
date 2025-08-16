@@ -7,9 +7,9 @@ import (
 
 // File 文件结构体
 type File struct {
-	Id       int
+	Id       uint64
 	FileName string
-	Count    int
+	Count    uint64
 }
 
 // String 返回文件信息的格式化字符串
@@ -19,9 +19,8 @@ func (f *File) String() string {
 
 // HitEvent 文件点击事件
 type HitEvent struct {
-	Id       int
+	Id       uint64
 	FileName string
-	Ts       int64
 }
 
 // RedBlackNode 红黑树节点
@@ -207,13 +206,13 @@ func (rbt *RedBlackTree) fixAfterUpdate(node *RedBlackNode) {
 	rbt.root.Color = black
 }
 
-func (rbt *RedBlackTree) TopN(n int) (result []File) {
+func (rbt *RedBlackTree) TopN(n int) (result []*File) {
 	rbt.topNFromRoot(rbt.root, &result, n)
 	return result
 }
 
 // 从树的根节点开始，遍历TopN个文件
-func (rbt *RedBlackTree) topNFromRoot(node *RedBlackNode, result *[]File, n int) {
+func (rbt *RedBlackTree) topNFromRoot(node *RedBlackNode, result *[]*File, n int) {
 	if node == nil || len(*result) >= n {
 		return
 	}
@@ -223,7 +222,7 @@ func (rbt *RedBlackTree) topNFromRoot(node *RedBlackNode, result *[]File, n int)
 
 	// 添加当前节点到结果中
 	if len(*result) < n {
-		*result = append(*result, *node.File)
+		*result = append(*result, node.File)
 	}
 
 	// 遍历右子树，再遍历左子树
@@ -231,13 +230,13 @@ func (rbt *RedBlackTree) topNFromRoot(node *RedBlackNode, result *[]File, n int)
 }
 
 // GetAllNodesDesc 获取所有节点并按倒序排列
-func (rbt *RedBlackTree) GetAllNodesDesc() (result []File) {
+func (rbt *RedBlackTree) GetAllNodesDesc() (result []*File) {
 	rbt.getAllNodesDescFromRoot(rbt.root, &result)
 	return result
 }
 
 // 从树的根节点开始，遍历所有节点并按倒序排列
-func (rbt *RedBlackTree) getAllNodesDescFromRoot(node *RedBlackNode, result *[]File) {
+func (rbt *RedBlackTree) getAllNodesDescFromRoot(node *RedBlackNode, result *[]*File) {
 	if node == nil {
 		return
 	}
@@ -245,7 +244,7 @@ func (rbt *RedBlackTree) getAllNodesDescFromRoot(node *RedBlackNode, result *[]F
 	rbt.getAllNodesDescFromRoot(node.Left, result)
 
 	// 添加当前节点到结果中
-	*result = append(*result, *node.File)
+	*result = append(*result, node.File)
 
 	// 遍历右子树
 	rbt.getAllNodesDescFromRoot(node.Right, result)

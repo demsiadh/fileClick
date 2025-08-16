@@ -1,6 +1,12 @@
 package config
 
+import (
+	"time"
+)
+
 const (
-	TopN    = 100
-	WalPath = "data/system/wal"
+	WalPath      = "data/system/wal"
+	WalMaxSize   = 64 << 20
+	RdbPath      = "data/system/rdb"
+	RdbShotEvery = time.Minute * 5
 )

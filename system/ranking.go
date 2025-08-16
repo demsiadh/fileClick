@@ -14,9 +14,9 @@ var rankBoardOnce sync.Once
 var rankBoard *RankBoard
 
 type RankBoard struct {
-	files       map[int]*File
+	files       map[uint64]*File
 	idGenerator *util.IDGenerator
-	writeCh     chan HitEvent
+	writeCh     chan *HitEvent
 	wg          sync.WaitGroup
 	rbt         *RedBlackTree
 }
@@ -24,9 +24,9 @@ type RankBoard struct {
 func GetRankBoard() *RankBoard {
 	rankBoardOnce.Do(func() {
 		rankBoard = &RankBoard{
-			files:       make(map[int]*File),
+			files:       make(map[uint64]*File),
 			idGenerator: util.GetIdGenerator(),
-			writeCh:     make(chan HitEvent, 1000),
+			writeCh:     make(chan *HitEvent, 1000),
 			rbt:         &RedBlackTree{},
 		}
 		go rankBoard.worker()
@@ -44,20 +44,19 @@ func (rb *RankBoard) worker() {
 	}
 }
 
-func (rb *RankBoard) RecordHit(event HitEvent) {
+func (rb *RankBoard) RecordHit(event *HitEvent) {
 	// 校验文件是否已经存在排行榜
 	file, exists := rb.files[event.Id]
 	if !exists {
-		// 不存在则初始化
-		id := rankBoard.idGenerator.GenerateID()
 		file = &File{
-			Id:       id,
+			Id:       event.Id,
 			FileName: event.FileName,
 			Count:    1,
 		}
-		rb.files[id] = file
+		rb.files[event.Id] = file
 		rb.rbt.insert(file)
 	} else {
+		file.Count++
 		rb.rbt.update(file)
 	}
 }

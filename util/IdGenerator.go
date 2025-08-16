@@ -32,7 +32,7 @@ func GetIdGenerator() *IDGenerator {
 }
 
 // GenerateID generateID 生成唯一ID
-func (g *IDGenerator) GenerateID() int {
+func (g *IDGenerator) GenerateID() uint64 {
 
 	// 获取当前时间戳（毫秒）
 	timestamp := time.Now().UnixMilli()
@@ -55,6 +55,6 @@ func (g *IDGenerator) GenerateID() int {
 	g.lastTimestamp = timestamp
 
 	// 将时间戳左移，并与序列号拼接生成最终的ID（确保不会超出int范围）
-	id := int((timestamp-epoch)<<sequenceBits) | int(g.sequence)
+	id := uint64((timestamp-epoch)<<sequenceBits) | uint64(g.sequence)
 	return id
 }
