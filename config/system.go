@@ -12,6 +12,7 @@ const (
 	RdbShotEvery = time.Minute * 5
 	FilePath     = "data/files/"
 	FileInfoPath = "data/fileInfo.json"
+	WalThreads   = 5
 )
 
 func init() {

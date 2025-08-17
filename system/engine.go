@@ -126,16 +126,13 @@ func (e *Engine) doSnapshotAndPrune() {
 		return
 	}
 
-	// 2) 删除早于 snapTs 的 WAL 段；3) 轮转开启新 AOF 段
+	// 2) 删除早于 snapTs 的 WAL 段
 	_ = pruneOldWAL(e.wal.dir, snapTs)
-
-	e.wal.mu.Lock()
-	_ = e.wal.rotateLocked()
-	e.wal.mu.Unlock()
 }
 
 func pruneOldWAL(dir string, snapTs int64) error {
-	files, _ := filepath.Glob(filepath.Join(dir, "wal-*.log"))
+	// 新的WAL文件格式: wal-{threadId}-{seq}.log
+	files, _ := filepath.Glob(filepath.Join(dir, "wal-*-*.log"))
 	sort.Strings(files)
 	for _, p := range files {
 		// 简单策略：如果文件的 mtime < snapTs，就删掉

@@ -27,7 +27,6 @@ func NewRDB() *Rdb {
 }
 
 // Save 保存RDB
-// Save 保存RDB
 func (r *Rdb) Save(files []*File) (snapshotTs int64, path string, err error) {
 	tmpPath := filepath.Join(config.RdbPath, fmt.Sprintf("dump-%d.rdb.tmp", time.Now().UnixNano()))
 	finalTs := time.Now().Unix()
