@@ -10,6 +10,7 @@ var once sync.Once
 
 // IDGenerator ID生成器结构体
 type IDGenerator struct {
+	mu            sync.Mutex
 	lastTimestamp int64 // 上次生成ID的时间戳
 	sequence      int   // 当前序列号
 	sequenceMask  int   // 序列号最大值（最多支持每毫秒生成1000个ID）
@@ -33,6 +34,8 @@ func GetIdGenerator() *IDGenerator {
 
 // GenerateID generateID 生成唯一ID
 func (g *IDGenerator) GenerateID() uint64 {
+	g.mu.Lock()
+	defer g.mu.Unlock()
 
 	// 获取当前时间戳（毫秒）
 	timestamp := time.Now().UnixMilli()

@@ -29,9 +29,6 @@ type Wal struct {
 }
 
 func NewWAL() (*Wal, error) {
-	if err := os.MkdirAll(config.WalPath, 0755); err != nil {
-		return nil, err
-	}
 	w := &Wal{dir: config.WalPath, maxSize: config.WalMaxSize}
 	if err := w.initFromExisting(); err != nil {
 		return nil, err

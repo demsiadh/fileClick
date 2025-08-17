@@ -5,11 +5,36 @@ import (
 	"strings"
 )
 
+// Res 响应体
+type Res struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+}
+
+// ResSuccess 响应成功
+func ResSuccess(data interface{}) *Res {
+	return &Res{
+		Code:    0,
+		Message: "success",
+		Data:    data,
+	}
+}
+
+// ResFailed 响应失败
+func ResFailed(message string) *Res {
+	return &Res{
+		Code:    -1,
+		Message: message,
+		Data:    "",
+	}
+}
+
 // File 文件结构体
 type File struct {
-	Id       uint64
-	FileName string
-	Count    uint64
+	Id       uint64 `json:"id"`
+	FileName string `json:"fileName"`
+	Count    uint64 `json:"count"`
 }
 
 // String 返回文件信息的格式化字符串

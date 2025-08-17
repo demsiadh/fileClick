@@ -1,15 +1,57 @@
 package service
 
-import "net/http"
+import (
+	"encoding/json"
+	"fileClick/system"
+	"net/http"
+	"strconv"
+)
 
 func Click(w http.ResponseWriter, r *http.Request) {
-	panic("implete me!")
+	// 设置响应头为JSON格式
+	w.Header().Set("Content-Type", "application/json")
+
+	// 解析请求体
+	var file system.File
+	err := json.NewDecoder(r.Body).Decode(&file)
+	if err != nil {
+		_ = json.NewEncoder(w).Encode(system.ResFailed("解析请求体失败: " + err.Error()))
+		return
+	}
+
+	if file.Id == 0 || file.FileName == "" {
+		_ = json.NewEncoder(w).Encode(system.ResFailed("参数有误"))
+		return
+	}
+
+	// 记录点击事件
+	err = system.RankEngine.Click(file.Id, file.FileName)
+	if err != nil {
+		_ = json.NewEncoder(w).Encode(system.ResFailed(err.Error()))
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(system.ResSuccess(file.Id))
 }
 
 func GetTopN(w http.ResponseWriter, r *http.Request) {
-	panic("implete me!")
+	w.Header().Set("Content-Type", "application/json")
+
+	topNStr := r.URL.Query().Get("topN")
+	topN, err := strconv.Atoi(topNStr)
+	if topN < 1 || err != nil {
+		_ = json.NewEncoder(w).Encode(system.ResFailed("topN必须为正整数"))
+		return
+	}
+	files := system.RankEngine.TopN(topN)
+
+	_ = json.NewEncoder(w).Encode(system.ResSuccess(files))
 }
 
-func GetAll(w http.ResponseWriter, r *http.Request) {
-	panic("implete me!")
+func GetTopAll(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	files := system.RankEngine.TopAll()
+
+	_ = json.NewEncoder(w).Encode(system.ResSuccess(files))
 }
