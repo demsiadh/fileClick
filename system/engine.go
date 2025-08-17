@@ -58,8 +58,8 @@ func (e *Engine) Recover() error {
 	e.rankBoard.files = fileMap
 	e.mu.Unlock()
 
-	apply := func(fileId uint64, ts int64, fileName string) error {
-		e.rankBoard.writeCh <- &HitEvent{Id: fileId, FileName: fileName}
+	apply := func(fileId uint64, ts int64) error {
+		e.rankBoard.writeCh <- &HitEvent{Id: fileId}
 		return nil
 	}
 
@@ -69,14 +69,13 @@ func (e *Engine) Recover() error {
 	return nil
 }
 
-func (e *Engine) Click(fileId uint64, fileName string) error {
+func (e *Engine) Click(fileId uint64) error {
 	ts := time.Now().Unix()
-	if err := e.wal.Append(fileId, ts, fileName); err != nil {
+	if err := e.wal.Append(fileId, ts); err != nil {
 		return err
 	}
 	e.rankBoard.writeCh <- &HitEvent{
-		Id:       fileId,
-		FileName: fileName,
+		Id: fileId,
 	}
 	return nil
 }

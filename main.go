@@ -38,14 +38,14 @@ func main() {
 		signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 		<-stop
 		config.Info("Shutting down HTTP server...")
+		// 停止 Engine
+		system.RankEngine.Stop()
+		config.Info("Engine stopped")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		_ = webSever.Shutdown(ctx)
-
-		// 停止 Engine
-		system.RankEngine.Stop()
-		config.Info("Engine stopped. Bye!")
+		config.Info("Http server stopped")
 	}()
 
 	// 6.启动Http服务

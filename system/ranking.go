@@ -48,9 +48,10 @@ func (rb *RankBoard) RecordHit(event *HitEvent) {
 	// 校验文件是否已经存在排行榜
 	file, exists := rb.files[event.Id]
 	if !exists {
+		fileInfo, _ := GetFileByID(event.Id)
 		file = &File{
 			Id:       event.Id,
-			FileName: event.FileName,
+			FileName: fileInfo.Name,
 			Count:    1,
 		}
 		rb.files[event.Id] = file

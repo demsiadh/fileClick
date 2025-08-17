@@ -44,8 +44,7 @@ func (f *File) String() string {
 
 // HitEvent 文件点击事件
 type HitEvent struct {
-	Id       uint64
-	FileName string
+	Id uint64
 }
 
 // RedBlackNode 红黑树节点

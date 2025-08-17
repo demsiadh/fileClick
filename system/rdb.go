@@ -27,6 +27,7 @@ func NewRDB() *Rdb {
 }
 
 // Save 保存RDB
+// Save 保存RDB
 func (r *Rdb) Save(files []*File) (snapshotTs int64, path string, err error) {
 	tmpPath := filepath.Join(config.RdbPath, fmt.Sprintf("dump-%d.rdb.tmp", time.Now().UnixNano()))
 	finalTs := time.Now().Unix()
@@ -66,7 +67,6 @@ func (r *Rdb) Save(files []*File) (snapshotTs int64, path string, err error) {
 
 	// CRC
 	crc := crc32.ChecksumIEEE(body.Bytes())
-	// 写入：body + crc32
 	if _, err = w.Write(body.Bytes()); err != nil {
 		return 0, "", err
 	}
@@ -87,6 +87,15 @@ func (r *Rdb) Save(files []*File) (snapshotTs int64, path string, err error) {
 	if err = os.Rename(tmpPath, finalPath); err != nil {
 		return 0, "", err
 	}
+
+	matches, _ := filepath.Glob(filepath.Join(config.RdbPath, "dump-*.rdb"))
+	if len(matches) > 3 {
+		sort.Strings(matches)
+		for _, old := range matches[:len(matches)-3] {
+			_ = os.Remove(old)
+		}
+	}
+
 	return finalTs, finalPath, nil
 }
 

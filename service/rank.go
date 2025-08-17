@@ -11,27 +11,21 @@ func Click(w http.ResponseWriter, r *http.Request) {
 	// 设置响应头为JSON格式
 	w.Header().Set("Content-Type", "application/json")
 
-	// 解析请求体
-	var file system.File
-	err := json.NewDecoder(r.Body).Decode(&file)
-	if err != nil {
-		_ = json.NewEncoder(w).Encode(system.ResFailed("解析请求体失败: " + err.Error()))
-		return
-	}
-
-	if file.Id == 0 || file.FileName == "" {
-		_ = json.NewEncoder(w).Encode(system.ResFailed("参数有误"))
+	idStr := r.URL.Query().Get("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if id < 1 || err != nil {
+		_ = json.NewEncoder(w).Encode(system.ResFailed("非法id"))
 		return
 	}
 
 	// 记录点击事件
-	err = system.RankEngine.Click(file.Id, file.FileName)
+	err = system.RankEngine.Click(id)
 	if err != nil {
 		_ = json.NewEncoder(w).Encode(system.ResFailed(err.Error()))
 		return
 	}
 
-	_ = json.NewEncoder(w).Encode(system.ResSuccess(file.Id))
+	_ = json.NewEncoder(w).Encode(system.ResSuccess(id))
 }
 
 func GetTopN(w http.ResponseWriter, r *http.Request) {

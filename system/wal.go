@@ -16,7 +16,7 @@ import (
 	"sync"
 )
 
-// Wal wal文件，类比AOF，格式[4]len | [4]crc32 | [8]fileId | [8]ts | [2]nameLen | [n]name
+// Wal wal文件，类比AOF，格式: [4]len | [4]crc32 | [8]fileId | [8]ts
 type Wal struct {
 	dir     string
 	maxSize int64
@@ -79,13 +79,11 @@ func (w *Wal) rotateLocked() error {
 	return nil
 }
 
-func (w *Wal) Append(fileId uint64, ts int64, fileName string) error {
-	nameBytes := []byte(fileName)
-	payload := make([]byte, 8+8+2+len(nameBytes)) // id(8) + ts(8) + namelen(2) + name
+func (w *Wal) Append(fileId uint64, ts int64) error {
+	// payload = fileId(8) + ts(8)
+	payload := make([]byte, 16)
 	binary.LittleEndian.PutUint64(payload[0:8], fileId)
 	binary.LittleEndian.PutUint64(payload[8:16], uint64(ts))
-	binary.LittleEndian.PutUint16(payload[16:18], uint16(len(nameBytes)))
-	copy(payload[18:], nameBytes)
 
 	crc := crc32.ChecksumIEEE(payload)
 	var header [8]byte
@@ -134,8 +132,8 @@ func (w *Wal) Close() error {
 	return w.curFile.Close()
 }
 
-// ReplayAll 从目录中按顺序回放全部 wal（遇到损坏或尾部半条自动停止该文件），apply 只会收到 ts>minTs 的记录
-func (w *Wal) ReplayAll(minTs int64, apply func(fileId uint64, ts int64, fileName string) error) error {
+// ReplayAll 从目录中按顺序回放全部 wal（遇到损坏或尾部半条自动停止该文件）
+func (w *Wal) ReplayAll(minTs int64, apply func(fileId uint64, ts int64) error) error {
 	matches, _ := filepath.Glob(filepath.Join(w.dir, "wal-*.log"))
 	sort.Strings(matches)
 	for _, p := range matches {
@@ -146,7 +144,7 @@ func (w *Wal) ReplayAll(minTs int64, apply func(fileId uint64, ts int64, fileNam
 	return nil
 }
 
-func (w *Wal) replayOne(path string, minTs int64, apply func(fileId uint64, ts int64, fileName string) error) error {
+func (w *Wal) replayOne(path string, minTs int64, apply func(fileId uint64, ts int64) error) error {
 	f, err := os.Open(path)
 	if err != nil {
 		return err
@@ -165,7 +163,7 @@ func (w *Wal) replayOne(path string, minTs int64, apply func(fileId uint64, ts i
 		length := binary.LittleEndian.Uint32(header[0:4])
 		sum := binary.LittleEndian.Uint32(header[4:8])
 
-		if length == 0 || length > 1<<26 { // 粗略防御：单条 >64MB 视为异常
+		if length != 16 {
 			return fmt.Errorf("bad wal record length in %s", path)
 		}
 		data := make([]byte, length)
@@ -176,19 +174,14 @@ func (w *Wal) replayOne(path string, minTs int64, apply func(fileId uint64, ts i
 			return err
 		}
 		if crc32.ChecksumIEEE(data) != sum {
-			// 数据损坏：停止该文件后续回放（与 Redis 类似）
-			return nil
+			return nil // 数据损坏，停止回放该文件
 		}
+
 		fileId := binary.LittleEndian.Uint64(data[0:8])
 		ts := int64(binary.LittleEndian.Uint64(data[8:16]))
-		nameLen := binary.LittleEndian.Uint16(data[16:18])
-		if int(18+nameLen) > len(data) {
-			return nil // 保护：异常长度当作截断
-		}
-		fileName := string(data[18 : 18+nameLen])
 
 		if ts > minTs {
-			if err := apply(fileId, ts, fileName); err != nil {
+			if err := apply(fileId, ts); err != nil {
 				return err
 			}
 		}
