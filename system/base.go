@@ -47,6 +47,11 @@ type HitEvent struct {
 	Id uint64
 }
 
+const (
+	red   = "red"
+	black = "black"
+)
+
 // RedBlackNode 红黑树节点
 type RedBlackNode struct {
 	File   *File

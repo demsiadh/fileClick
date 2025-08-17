@@ -5,11 +5,6 @@ import (
 	"sync"
 )
 
-const (
-	red   = "red"
-	black = "black"
-)
-
 var rankBoardOnce sync.Once
 var rankBoard *RankBoard
 
