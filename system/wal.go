@@ -214,13 +214,12 @@ func (w *Wal) ReplayAll(minTs int64, apply func(fileId uint64, ts int64) error) 
 	sort.Strings(allFiles)
 
 	// 使用工作池进行并发回放
-	const numWorkers = 5
 	fileChan := make(chan string, len(allFiles))
-	errorChan := make(chan error, numWorkers)
+	errorChan := make(chan error, config.WalThreads)
 	var wg sync.WaitGroup
 
 	// 启动工作协程
-	for i := 0; i < numWorkers; i++ {
+	for i := 0; i < config.WalThreads; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

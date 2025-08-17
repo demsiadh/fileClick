@@ -21,16 +21,14 @@ type Rdb struct {
 }
 
 func NewRDB() *Rdb {
-	dir := config.RdbPath
-	_ = os.MkdirAll(dir, 0755)
-	return &Rdb{dir: dir, version: 1}
+	return &Rdb{dir: config.RdbPath, version: 1}
 }
 
 // Save 保存RDB
 func (r *Rdb) Save(files []*File) (snapshotTs int64, path string, err error) {
-	tmpPath := filepath.Join(config.RdbPath, fmt.Sprintf("dump-%d.rdb.tmp", time.Now().UnixNano()))
+	tmpPath := filepath.Join(r.dir, fmt.Sprintf("dump-%d.rdb.tmp", time.Now().UnixNano()))
 	finalTs := time.Now().Unix()
-	finalPath := filepath.Join(config.RdbPath, fmt.Sprintf("dump-%d.rdb", finalTs))
+	finalPath := filepath.Join(r.dir, fmt.Sprintf("dump-%d.rdb", finalTs))
 
 	f, err := os.OpenFile(tmpPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
@@ -87,8 +85,8 @@ func (r *Rdb) Save(files []*File) (snapshotTs int64, path string, err error) {
 		return 0, "", err
 	}
 
-	matches, _ := filepath.Glob(filepath.Join(config.RdbPath, "dump-*.rdb"))
-	if len(matches) > 3 {
+	matches, _ := filepath.Glob(filepath.Join(r.dir, "dump-*.rdb"))
+	if len(matches) > config.RdbMaxFileNum {
 		sort.Strings(matches)
 		for _, old := range matches[:len(matches)-3] {
 			_ = os.Remove(old)
@@ -98,6 +96,7 @@ func (r *Rdb) Save(files []*File) (snapshotTs int64, path string, err error) {
 	return finalTs, finalPath, nil
 }
 
+// RdbLoadResult RDB 加载结果
 type RdbLoadResult struct {
 	SnapshotTs int64
 	Files      []*File
@@ -106,7 +105,7 @@ type RdbLoadResult struct {
 
 // LoadLatest 加载RDB文件
 func (r *Rdb) LoadLatest() (*RdbLoadResult, error) {
-	matches, _ := filepath.Glob(filepath.Join(config.RdbPath, "dump-*.rdb"))
+	matches, _ := filepath.Glob(filepath.Join(r.dir, "dump-*.rdb"))
 	if len(matches) == 0 {
 		return &RdbLoadResult{SnapshotTs: 0, Files: []*File{}, Path: ""}, nil
 	}

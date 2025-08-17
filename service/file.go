@@ -17,7 +17,7 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// 1.解析表单数据，包括文件
-	err := r.ParseMultipartForm(32 << 20) // 32MB最大内存
+	err := r.ParseMultipartForm(config.FileMaxSize)
 	if err != nil {
 		_ = json.NewEncoder(w).Encode(system.ResFailed("解析表单数据失败: " + err.Error()))
 		return

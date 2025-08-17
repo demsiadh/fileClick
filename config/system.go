@@ -6,13 +6,16 @@ import (
 )
 
 const (
-	WalPath      = "data/system/wal/"
-	WalMaxSize   = 64 << 20
-	RdbPath      = "data/system/rdb/"
-	RdbShotEvery = time.Minute * 5
-	FilePath     = "data/files/"
-	FileInfoPath = "data/fileInfo.json"
-	WalThreads   = 5
+	WalPath       = "data/system/wal/"
+	WalMaxSize    = 64 << 20
+	RdbMaxFileNum = 3
+	RdbPath       = "data/system/rdb/"
+	RdbShotEvery  = time.Minute * 5
+	FilePath      = "data/files/"
+	FileInfoPath  = "data/fileInfo.json"
+	FileMaxSize   = 32 << 20
+	WalThreads    = 5
+	LogPath       = "data/logs/"
 )
 
 func init() {
@@ -26,6 +29,10 @@ func init() {
 		panic("mkdir failed")
 	}
 	err = os.MkdirAll(FilePath, os.ModePerm)
+	if err != nil {
+		panic("mkdir failed")
+	}
+	err = os.MkdirAll(LogPath, os.ModePerm)
 	if err != nil {
 		panic("mkdir failed")
 	}
