@@ -68,24 +68,22 @@ func (e *Engine) Recover() error {
 	return nil
 }
 
-func (e *Engine) Click(fileId uint64) error {
+func (e *Engine) Click(fileId uint64) {
 	ts := time.Now().Unix()
 	if err := e.wal.Append(fileId, ts); err != nil {
-		return err
+		panic("写入WAL文件异常")
 	}
 	e.rankBoard.writeCh <- &FileEvent{
 		Id:   fileId,
 		Type: HitEvent,
 	}
-	return nil
 }
 
-func (e *Engine) Delete(fileId uint64) error {
+func (e *Engine) Delete(fileId uint64) {
 	e.rankBoard.writeCh <- &FileEvent{
 		Id:   fileId,
 		Type: DeleteEvent,
 	}
-	return nil
 }
 
 func (e *Engine) TopN(n int) []*File {

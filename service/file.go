@@ -133,6 +133,9 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 删除排行榜记录
+	system.RankEngine.Delete(id)
+
 	_ = json.NewEncoder(w).Encode(system.ResSuccess(fileID))
 }
 

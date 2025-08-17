@@ -19,11 +19,7 @@ func Click(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 记录点击事件
-	err = system.RankEngine.Click(id)
-	if err != nil {
-		_ = json.NewEncoder(w).Encode(system.ResFailed(err.Error()))
-		return
-	}
+	system.RankEngine.Click(id)
 
 	_ = json.NewEncoder(w).Encode(system.ResSuccess(id))
 }
