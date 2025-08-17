@@ -1,7 +1,7 @@
 package system
 
 import (
-	"fileClick/util"
+	"fileClick/config"
 	"sync"
 )
 
@@ -9,20 +9,16 @@ var rankBoardOnce sync.Once
 var rankBoard *RankBoard
 
 type RankBoard struct {
-	files       map[uint64]*File
-	idGenerator *util.IDGenerator
-	writeCh     chan *HitEvent
-	wg          sync.WaitGroup
-	rbt         *RedBlackTree
+	writeCh chan *FileEvent
+	wg      sync.WaitGroup
+	lru     *LRUList
 }
 
 func GetRankBoard() *RankBoard {
 	rankBoardOnce.Do(func() {
 		rankBoard = &RankBoard{
-			files:       make(map[uint64]*File),
-			idGenerator: util.GetIdGenerator(),
-			writeCh:     make(chan *HitEvent, 1000),
-			rbt:         &RedBlackTree{},
+			writeCh: make(chan *FileEvent, config.FileEventMax),
+			lru:     NewLRURanking(),
 		}
 		go rankBoard.worker()
 	})
@@ -35,24 +31,6 @@ func (rb *RankBoard) worker() {
 	defer rb.wg.Done()
 
 	for event := range rb.writeCh {
-		rb.RecordHit(event)
-	}
-}
-
-func (rb *RankBoard) RecordHit(event *HitEvent) {
-	// 校验文件是否已经存在排行榜
-	file, exists := rb.files[event.Id]
-	if !exists {
-		fileInfo, _ := GetFileByID(event.Id)
-		file = &File{
-			Id:       event.Id,
-			FileName: fileInfo.Name,
-			Count:    1,
-		}
-		rb.files[event.Id] = file
-		rb.rbt.insert(file)
-	} else {
-		file.Count++
-		rb.rbt.update(file)
+		rb.lru.hit(event.Id)
 	}
 }

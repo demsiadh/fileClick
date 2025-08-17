@@ -9,7 +9,7 @@ import (
 )
 
 type FileInfo struct {
-	Name string `json:"name"`
+	Name string `json:"fileName"`
 	Path string `json:"path"`
 }
 

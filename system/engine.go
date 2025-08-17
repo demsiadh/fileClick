@@ -53,13 +53,12 @@ func (e *Engine) Recover() error {
 	fileMap := make(map[uint64]*File, len(ld.Files))
 	for _, file := range ld.Files {
 		fileMap[file.Id] = file
-		e.rankBoard.rbt.insert(file)
+		e.rankBoard.lru.insert(file)
 	}
-	e.rankBoard.files = fileMap
 	e.mu.Unlock()
 
 	apply := func(fileId uint64, ts int64) error {
-		e.rankBoard.writeCh <- &HitEvent{Id: fileId}
+		e.rankBoard.writeCh <- &FileEvent{Id: fileId, Type: HitEvent}
 		return nil
 	}
 
@@ -74,18 +73,27 @@ func (e *Engine) Click(fileId uint64) error {
 	if err := e.wal.Append(fileId, ts); err != nil {
 		return err
 	}
-	e.rankBoard.writeCh <- &HitEvent{
-		Id: fileId,
+	e.rankBoard.writeCh <- &FileEvent{
+		Id:   fileId,
+		Type: HitEvent,
+	}
+	return nil
+}
+
+func (e *Engine) Delete(fileId uint64) error {
+	e.rankBoard.writeCh <- &FileEvent{
+		Id:   fileId,
+		Type: DeleteEvent,
 	}
 	return nil
 }
 
 func (e *Engine) TopN(n int) []*File {
-	return e.rankBoard.rbt.TopN(n)
+	return e.rankBoard.lru.TopN(n)
 }
 
 func (e *Engine) TopAll() []*File {
-	return e.rankBoard.rbt.GetAllNodesDesc()
+	return e.rankBoard.lru.TopAll()
 }
 
 // StartScheduler 周期快照 & AOF 清理

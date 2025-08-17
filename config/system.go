@@ -8,14 +8,15 @@ import (
 const (
 	WalPath       = "data/system/wal/"
 	WalMaxSize    = 64 << 20
+	WalThreads    = 5
 	RdbMaxFileNum = 3
 	RdbPath       = "data/system/rdb/"
 	RdbShotEvery  = time.Minute * 5
 	FilePath      = "data/files/"
 	FileInfoPath  = "data/fileInfo.json"
 	FileMaxSize   = 32 << 20
-	WalThreads    = 5
 	LogPath       = "data/logs/"
+	FileEventMax  = 1000
 )
 
 func init() {

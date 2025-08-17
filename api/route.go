@@ -28,6 +28,17 @@ func InitRouter() *http.Server {
 // methodGuard 是一个中间件，用于限制允许的HTTP方法
 func methodGuard(allowedMethod string, handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// 添加CORS支持
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// 处理预检请求
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		if r.Method == allowedMethod {
 			handler(w, r)
 			return
