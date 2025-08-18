@@ -38,15 +38,19 @@ wal多线程写入：由于每次写入wal需要刷盘，耗时较长，采用�
 前端实时刷新：采用每秒刷新和点击量阈值的方式从后端获取对应topN
 
 ## 性能测试
+> 本地电脑测试，结果仅供参考
 
 ### jmeter压测
-> 本地电脑测试，结果仅供参考
 
 十线程总点击100000次，完成时间75s
 ![img.png](static/images/jemeter压力测试.png)
 
 期间请求获取排行榜不阻塞，且响应时间10ms内，结束后，文件点击次数正确来到10w
 ![img.png](static/images/jemeter压力测试结果.png)
+
+### apifox性能测试
+100用户，10mins点击，每秒100次，平均响应时间8ms
+![img.png](static/images/apifox性能测试结果.png)
 
 ## 项目目录说明
 ```text
