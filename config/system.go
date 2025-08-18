@@ -8,7 +8,7 @@ import (
 const (
 	WalPath       = "data/system/wal/"
 	WalMaxSize    = 64 << 20
-	WalThreads    = 5
+	WalThreads    = 4
 	RdbMaxFileNum = 3
 	RdbPath       = "data/system/rdb/"
 	RdbShotEvery  = time.Minute * 5

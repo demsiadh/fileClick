@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件管理系统</title>
+    <style>
+        /* 页面基础样式 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f0f2f5;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            gap: 20px;
+        }
+        .left, .right {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .left { flex: 2; }
+        .right { flex: 1; }
+        h2 {
+            margin: 15px 0;
+            font-size: 20px;
+            color: #34495e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        select {
+            padding: 5px 8px;
+            font-size: 14px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* 文件列表多列布局 */
+        .file-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+        .file-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #fafafa;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            font-size: 13px;
+            text-align: center;
+            border: 1px solid #e1e4e8;
+        }
+        .file-item:hover {
+            background-color: #eaf0f6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+        .file-actions {
+            margin-top: 8px;
+            display: flex;
+            gap: 6px;
+        }
+        .file-actions button {
+            padding: 4px 8px;
+            font-size: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .file-actions .download {
+            background-color: #3498db;
+            color: white;
+        }
+        .file-actions .download:hover { background-color: #2980b9; }
+        .file-actions .delete {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .file-actions .delete:hover { background-color: #c0392b; }
+
+        /* 操作按钮区 */
+        .actions {
+            margin: 15px 0;
+        }
+        .actions button {
+            margin-right: 10px;
+            padding: 8px 16px;
+            font-size: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #2ecc71;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .actions button:hover { background: #27ae60; }
+
+        /* 排行榜表格 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background-color: #f7f9fb;
+            color: #34495e;
+            font-weight: 600;
+        }
+        tr:hover { background-color: #f1f6fb; }
+
+        /* Toast 提示 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #2ecc71;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            opacity: 0;
+            transition: all 0.3s ease-in-out;
+            z-index: 1000;
+        }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+<h1>文件管理系统</h1>
+<div class="container">
+    <div class="left">
+        <h2>文件列表</h2>
+        <div class="actions">
+            <input type="file" id="uploadFile" style="display:none" onchange="handleFileSelect(event)">
+            <button onclick="document.getElementById('uploadFile').click()">上传文件</button>
+            <button onclick="loadFiles()">刷新列表</button>
+        </div>
+        <ul class="file-list" id="fileList"></ul>
+    </div>
+
+    <div class="right">
+        <h2>
+            点击排行榜
+            <select id="rankSelect" onchange="handleRankChange()">
+                <option value="10" selected>Top 10</option>
+                <option value="100">Top 100</option>
+                <option value="1000">Top 1000</option>
+                <option value="all">全部</option>
+            </select>
+        </h2>
+        <table id="rankTable">
+            <thead>
+            <tr><th>排名</th><th>文件名 (id后四位)</th><th>点击数</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="toast" class="toast">操作成功！</div>
+
+<script>
+    const API_BASE_URL = 'http://21.91.108.71:8080';
+
+    // Toast 提示
+    function showToast(message, duration=1000) {
+        const toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.classList.add("show");
+        setTimeout(()=>{ toast.classList.remove("show"); }, duration);
+    }
+
+    // 文件列表加载
+    async function loadFiles() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/all`);
+            const files = await response.json();
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            Object.entries(files.data).forEach(([id, file])=>{
+                const shortId = id.slice(-4);
+                const li = document.createElement('li');
+                li.className = 'file-item';
+                li.onclick = (event)=>clickFile(id, event);
+                li.innerHTML = `
+                <span>${file.fileName} (${shortId})</span>
+                <div class="file-actions">
+                    <button class="download" onclick="event.stopPropagation(); downloadFile('${id}')">下载</button>
+                    <button class="delete" onclick="event.stopPropagation(); deleteFile('${id}')">删除</button>
+                </div>
+            `;
+                fileList.appendChild(li);
+            });
+        } catch(error){ console.error('加载文件失败:', error); }
+    }
+
+    // 上传文件
+    async function handleFileSelect(event){
+        const file = event.target.files[0];
+        if(!file) return;
+        const formData = new FormData();
+        formData.append("file", file);
+        try {
+            const response = await fetch(`${API_BASE_URL}/upload`, { method:'POST', body:formData });
+            const result = await response.json();
+            if(result.code===200 || result.code===0){
+                showToast("上传成功！");
+                loadFiles();
+            } else showToast("上传失败: "+result.msg);
+        } catch(error){ console.error("上传失败:", error); }
+        event.target.value="";
+    }
+
+    // 下载文件
+    function downloadFile(fileId){ window.open(`${API_BASE_URL}/download?id=${fileId}`, '_blank'); }
+
+    // 点击文件
+    let clickBuffer=0;
+    async function clickFile(fileId, event){
+        if(event) event.preventDefault();
+        try{
+            await fetch(`${API_BASE_URL}/click?id=${fileId}`, {method:'PUT'});
+            clickBuffer++;
+            showToast("点击成功！", 500);
+
+            // 点击次数达到 10，立即刷新排行榜
+            if(clickBuffer >= 10){
+                loadRank();
+                clickBuffer = 0;
+            }
+        } catch(error){ console.error('点击文件失败:', error); }
+    }
+
+    // 删除文件
+    async function deleteFile(fileId){
+        try{
+            await fetch(`${API_BASE_URL}/delete?id=${fileId}`, { method:'DELETE' });
+            showToast("删除成功！");
+            loadFiles();
+            loadRank();
+        } catch(error){ console.error('删除文件失败:', error); }
+    }
+
+    // 排行榜加载
+    async function loadRank(){
+        const mode = document.getElementById("rankSelect").value;
+        const url = mode==='all'?`${API_BASE_URL}/topAll`:`${API_BASE_URL}/topN?topN=${mode}`;
+        try{
+            const response = await fetch(url);
+            const data = await response.json();
+            const rankList = data.data || [];
+            const tbody = document.querySelector('#rankTable tbody');
+            tbody.innerHTML='';
+            rankList.forEach((file,index)=>{
+                const shortId = String(file.id).slice(-4);
+                const row = `<tr>
+                <td>${index+1}</td>
+                <td>${file.fileName} (${shortId})</td>
+                <td>${file.count}</td>
+            </tr>`;
+                tbody.innerHTML+=row;
+            });
+        } catch(error){ console.error('加载排行榜失败:', error); }
+    }
+
+    function handleRankChange(){ loadRank(); }
+
+    // 页面加载完成
+    document.addEventListener('DOMContentLoaded', ()=>{
+        loadFiles();
+        loadRank();
+
+        // 每秒刷新排行榜（无论点击与否）
+        setInterval(() => {
+            loadRank();
+            clickBuffer = 0; // 每秒刷新后清空点击计数
+        }, 1000);
+    });
+</script>
+</body>
+</html>
