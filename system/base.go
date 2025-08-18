@@ -81,7 +81,10 @@ func (lru *LRUList) hit(fileId uint64) {
 	// 通过map快速查找节点
 	node, exists := lru.fileMap[fileId]
 	if !exists {
-		fileInfo, _ := GetFileByID(fileId)
+		fileInfo, err := GetFileByID(fileId)
+		if err != nil {
+			return
+		}
 		// 节点不存在，创建新文件并插入
 		newFile := &File{
 			Id:       fileId,
@@ -226,8 +229,8 @@ func (lru *LRUList) String() string {
 	return strings.Join(result, "\n")
 }
 
-// Remove 从排行榜中移除指定ID的文件
-func (lru *LRUList) Remove(id uint64) {
+// delete 从排行榜中移除指定ID的文件
+func (lru *LRUList) delete(id uint64) {
 	node, exists := lru.fileMap[id]
 	if !exists {
 		return

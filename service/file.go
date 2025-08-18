@@ -111,6 +111,8 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(system.ResFailed("无效的文件ID"))
 		return
 	}
+	// 删除排行榜记录
+	system.RankEngine.Delete(id)
 
 	// 读取文件信息
 	fileInfo, err := system.GetFileByID(id)
@@ -132,9 +134,6 @@ func DeleteFile(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(system.ResFailed("更新文件记录失败: " + err.Error()))
 		return
 	}
-
-	// 删除排行榜记录
-	system.RankEngine.Delete(id)
 
 	_ = json.NewEncoder(w).Encode(system.ResSuccess(fileID))
 }

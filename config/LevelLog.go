@@ -28,6 +28,10 @@ var (
 )
 
 func init() {
+	err := os.MkdirAll(LogPath, os.ModePerm)
+	if err != nil {
+		panic("mkdir failed")
+	}
 	// 创建或追加写入日志文件
 	file, err := os.OpenFile(LogPath+"app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {

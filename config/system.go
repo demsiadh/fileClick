@@ -16,7 +16,7 @@ const (
 	FileInfoPath  = "data/fileInfo.json"
 	FileMaxSize   = 32 << 20
 	LogPath       = "data/logs/"
-	FileEventMax  = 1000
+	FileEventMax  = 10000
 )
 
 func init() {
@@ -30,10 +30,6 @@ func init() {
 		panic("mkdir failed")
 	}
 	err = os.MkdirAll(FilePath, os.ModePerm)
-	if err != nil {
-		panic("mkdir failed")
-	}
-	err = os.MkdirAll(LogPath, os.ModePerm)
 	if err != nil {
 		panic("mkdir failed")
 	}

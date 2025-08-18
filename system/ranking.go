@@ -31,6 +31,13 @@ func (rb *RankBoard) worker() {
 	defer rb.wg.Done()
 
 	for event := range rb.writeCh {
-		rb.lru.hit(event.Id)
+		switch event.Type {
+		case HitEvent:
+			rb.lru.hit(event.Id)
+		case DeleteEvent:
+			rb.lru.delete(event.Id)
+		default:
+			config.Error("不支持的事件！")
+		}
 	}
 }
