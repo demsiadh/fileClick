@@ -158,7 +158,7 @@ func (lru *LRUList) update(file *File) {
 
 	// 更新点击数
 	node.File.Count = file.Count
-	if node.Prev != nil && node.Prev.File.Count < node.File.Count {
+	for node.Prev != nil && node.Prev.File.Count < node.File.Count {
 		lru.swapWithPrev(node)
 	}
 }
