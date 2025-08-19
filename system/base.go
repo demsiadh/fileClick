@@ -121,7 +121,15 @@ func (lru *LRUList) insert(file *File) {
 		return
 	}
 
-	// 寻找正确的插入位置
+	// 文件首次点击
+	if file.Count == 1 {
+		lru.tail.Next = newNode
+		newNode.Prev = lru.tail
+		lru.tail = newNode
+		return
+	}
+
+	// 数据恢复 -> 寻找正确的插入位置
 	var curr *LinkedNode
 	for curr = lru.head; curr != nil; curr = curr.Next {
 		// 按count降序排序，count相同时按ID升序排序
