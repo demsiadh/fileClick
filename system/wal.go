@@ -29,11 +29,11 @@ type WalThread struct {
 	dir      string
 	maxSize  int64
 
-	mu      sync.Mutex
 	curFile *os.File
 	writer  *bufio.Writer
 	curSize int64
 	seq     int
+	reqCh   chan *WalRecord
 }
 
 // Wal 多线程WAL管理器
@@ -53,7 +53,7 @@ func NewWAL() (*Wal, error) {
 		shutdown: make(chan struct{}),
 	}
 
-	// 初始化5个WAL线程
+	// 初始化WAL线程
 	for i := 0; i < config.WalThreads; i++ {
 		thread, err := w.newWalThread(i)
 		if err != nil {
@@ -70,12 +70,25 @@ func (w *Wal) newWalThread(threadId int) (*WalThread, error) {
 		threadId: threadId,
 		dir:      w.dir,
 		maxSize:  w.maxSize,
+		reqCh:    make(chan *WalRecord),
 	}
-
 	if err := wt.initFromExisting(); err != nil {
 		return nil, err
 	}
+	w.wg.Add(1)
+	go func() {
+		defer w.wg.Done()
+		wt.run()
+	}()
 	return wt, nil
+}
+
+func (wt *WalThread) run() {
+	for req := range wt.reqCh {
+		if err := wt.appendRecord(req.FileId, req.Ts); err != nil {
+			panic(fmt.Sprintf("wal write failed (thread %d): %v", wt.threadId, err))
+		}
+	}
 }
 
 func (wt *WalThread) initFromExisting() error {
@@ -140,9 +153,6 @@ func (wt *WalThread) appendRecord(fileId uint64, ts int64) error {
 
 	recordSize := int64(len(payload) + len(header))
 
-	wt.mu.Lock()
-	defer wt.mu.Unlock()
-
 	if wt.curFile == nil {
 		if err := wt.rotateLocked(); err != nil {
 			return err
@@ -169,37 +179,37 @@ func (wt *WalThread) appendRecord(fileId uint64, ts int64) error {
 	return wt.curFile.Sync()
 }
 
-func (wt *WalThread) close() error {
-	wt.mu.Lock()
-	defer wt.mu.Unlock()
+func (wt *WalThread) close() {
 	if wt.curFile == nil {
-		return nil
+		return
 	}
 	_ = wt.writer.Flush()
 	_ = wt.curFile.Sync()
-	return wt.curFile.Close()
+	_ = wt.curFile.Close()
 }
 
 // Append 使用随机分配方式选择线程进行写入，实现负载均衡
-func (w *Wal) Append(fileId uint64, ts int64) error {
+func (w *Wal) Append(fileId uint64, ts int64) {
 	// 使用随机分配方式选择线程，实现更好的负载均衡
 	// 由于WAL只保存ID和时间戳，同一ID放到不同文件无所谓
 	seed := atomic.AddUint64(&w.randomSeed, 1)
 	threadId := int(seed % config.WalThreads)
-	return w.threads[threadId].appendRecord(fileId, ts)
+	w.threads[threadId].reqCh <- &WalRecord{FileId: fileId, Ts: ts}
 }
 
-func (w *Wal) Close() error {
-	close(w.shutdown)
+func (w *Wal) Close() {
+	// 1. 关闭所有 reqCh，通知线程退出
+	for _, thread := range w.threads {
+		close(thread.reqCh)
+	}
+
+	// 2. 等待线程安全退出
 	w.wg.Wait()
 
-	var lastErr error
+	// 3. 关闭所有文件
 	for _, thread := range w.threads {
-		if err := thread.close(); err != nil {
-			lastErr = err
-		}
+		thread.close()
 	}
-	return lastErr
 }
 
 // ReplayAll 多线程回放所有WAL文件
