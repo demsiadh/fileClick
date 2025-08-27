@@ -70,7 +70,9 @@ func (e *Engine) Recover() error {
 
 func (e *Engine) Click(fileId uint64) {
 	ts := time.Now().Unix()
-	e.wal.Append(fileId, ts)
+	if err := e.wal.Append(fileId, ts); err != nil {
+		panic("写入WAL文件异常")
+	}
 	e.rankBoard.writeCh <- &FileEvent{
 		Id:   fileId,
 		Type: HitEvent,
@@ -116,7 +118,7 @@ func (e *Engine) StartScheduler() {
 func (e *Engine) Stop() {
 	e.cancel()
 	e.wg.Wait()
-	e.wal.Close()
+	_ = e.wal.Close()
 	// 退出前再做一次快照
 	e.doSnapshotAndPrune()
 }
